@@ -1,17 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { checkWheelSpinStatus } from '@/app/actions';
+import { useSession } from 'next-auth/react'; 
+import { checkWheelSpinStatus, spinWheel } from '@/app/actions';
 import { toast } from 'sonner';
 import { Gift, X, Loader2 } from 'lucide-react';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onWin: (data: { discount: number; expiresAt: Date }) => void;
+ onWin: (data: { discount: number; expiresAt: Date }) => void;
 };
 
 export function WheelOfFortune({ isOpen, onClose, onWin }: Props) {
+  const {  data: session, status } = useSession(); 
+  
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [canSpin, setCanSpin] = useState(true);
@@ -40,7 +43,7 @@ export function WheelOfFortune({ isOpen, onClose, onWin }: Props) {
   }
 
   useEffect(() => {
-    if (isOpen && !hasChecked) {
+    if (isOpen && !hasChecked && status === 'authenticated') {
       checkWheelSpinStatus().then((status) => {
         setCanSpin(!status.hasSpunToday);
         setHasChecked(true);
@@ -50,15 +53,21 @@ export function WheelOfFortune({ isOpen, onClose, onWin }: Props) {
     if (!isOpen) {
       setHasChecked(false);
     }
-  }, [isOpen, hasChecked]);
+  }, [isOpen, hasChecked, status]);
 
   const handleSpin = async () => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') {
+      toast.error('Войдите в аккаунт, чтобы крутить колесо!');
+      return;
+    }
+    
     if (!canSpin || isSpinning) return;
 
     setIsSpinning(true);
 
     try {
-      const result = await import('@/app/actions').then(m => m.spinWheel());
+      const result = await spinWheel();
 
       const newRotation = getRotationForDiscount(result.discount, rotation);
       setRotation(newRotation);
@@ -109,9 +118,11 @@ export function WheelOfFortune({ isOpen, onClose, onWin }: Props) {
           </div>
           <h3 className="text-xl font-bold text-gray-900">Колесо удачи!</h3>
           <p className="text-sm text-gray-500 mt-1">
-            {canSpin
-              ? 'Крути и выиграй скидку до 20%!'
-              : 'Приходи завтра за новой удачей!'}
+            {status !== 'authenticated' 
+              ? 'Войдите, чтобы крутить!' 
+              : canSpin 
+                ? 'Крути и выиграй скидку до 20%!' 
+                : 'Приходи завтра за новой удачей!'}
           </p>
         </div>
 
@@ -166,7 +177,7 @@ export function WheelOfFortune({ isOpen, onClose, onWin }: Props) {
 
         <button
           onClick={handleSpin}
-          disabled={isSpinning || !canSpin}
+          disabled={isSpinning || !canSpin || status !== 'authenticated'}
           className="w-full px-6 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-bold text-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
         >
           {isSpinning ? (
@@ -174,6 +185,8 @@ export function WheelOfFortune({ isOpen, onClose, onWin }: Props) {
               <Loader2 className="animate-spin" size={20} />
               Крутим...
             </>
+          ) : status !== 'authenticated' ? (
+            'Войдите, чтобы крутить'
           ) : canSpin ? (
             'Крутить колесо!'
           ) : (
