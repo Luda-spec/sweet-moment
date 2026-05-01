@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Cake,
   Truck,
+  Gift, 
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -82,8 +83,15 @@ export function OrderCard({ order }: { order: Order }) {
     }
   };
 
-  const productsTotal = order.totalAmount - (order.deliveryPrice || 0);
-  const isFreeDelivery = order.deliveryPrice == null || order.deliveryPrice === 0;
+  const itemsTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryPrice = order.deliveryPrice || 0;
+  const isFreeDelivery = deliveryPrice === 0;
+  
+  const originalTotal = itemsTotal + deliveryPrice;
+  const discountAmount = originalTotal - order.totalAmount;
+  const discountPercent = itemsTotal > 0 && discountAmount > 0 
+    ? Math.round((discountAmount / itemsTotal) * 100) 
+    : 0;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
@@ -208,16 +216,28 @@ export function OrderCard({ order }: { order: Order }) {
           <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
             <div className="flex justify-between text-gray-600">
               <span>Товары:</span>
-              <span>{productsTotal} ₽</span>
+              <span>{itemsTotal} ₽</span>
             </div>
+            
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center text-green-600 font-medium bg-green-50 px-2 py-1 rounded-lg border border-green-100">
+                <div className="flex items-center gap-1.5">
+                  <Gift size={14} className="text-green-500" />
+                  <span>Скидка {discountPercent}%</span>
+                </div>
+                <span>-{discountAmount} ₽</span>
+              </div>
+            )}
+            
             <div className="flex justify-between text-gray-600">
               <span className="flex items-center gap-1.5">
                 <Truck size={14} className="text-gray-400" /> Доставка:
               </span>
               <span className={isFreeDelivery ? 'text-green-600 font-medium' : ''}>
-                {isFreeDelivery ? 'Бесплатно' : `${order.deliveryPrice} ₽`}
+                {isFreeDelivery ? 'Бесплатно' : `${deliveryPrice} ₽`}
               </span>
             </div>
+            
             <div className="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-200">
               <span>Итого к оплате:</span>
               <span className="text-base">{order.totalAmount} ₽</span>

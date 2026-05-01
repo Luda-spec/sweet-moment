@@ -77,6 +77,7 @@ async function syncProductFillings(productId: number, fillingIds: number[]) {
   });
 }
 
+
 export async function createProduct(formData: FormData) {
   const session = await auth();
   if (!session?.user?.email) throw new Error('Не авторизован');

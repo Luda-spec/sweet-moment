@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Title } from '@/components/shared';
 import { 
   ChevronDown, ChevronUp, Package, User, MapPin, 
-  Calendar, Clock, CreditCard, MessageSquare, Cake 
+  Calendar, Clock, CreditCard, MessageSquare, Cake, Gift 
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -128,6 +128,14 @@ export default function OrdersPage() {
           const statusKey = order.status as keyof typeof STATUS_CONFIG;
           const status = STATUS_CONFIG[statusKey] || STATUS_CONFIG.PENDING;
 
+          const itemsTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          const deliveryPrice = order.deliveryPrice || 0;
+          const originalTotal = itemsTotal + deliveryPrice;
+          const discountAmount = originalTotal - order.totalAmount;
+          const discountPercent = itemsTotal > 0 && discountAmount > 0 
+            ? Math.round((discountAmount / itemsTotal) * 100) 
+            : 0;
+
           return (
             <div
               key={order.id}
@@ -248,12 +256,23 @@ export default function OrdersPage() {
                     <div className="space-y-2 mb-3 text-sm">
                       <div className="flex justify-between text-gray-500">
                         <span>Товары</span>
-                        <span>{order.totalAmount - (order.deliveryPrice || 0)} ₽</span>
+                        <span>{itemsTotal} ₽</span>
                       </div>
-                      {order.deliveryPrice ? (
+                      
+                      {discountAmount > 0 && (
+                        <div className="flex justify-between items-center text-green-600 font-medium bg-green-50 px-2 py-1 rounded-lg border border-green-100">
+                          <div className="flex items-center gap-1.5">
+                            <Gift size={14} className="text-green-500" />
+                            <span>Скидка {discountPercent}%</span>
+                          </div>
+                          <span>-{discountAmount} ₽</span>
+                        </div>
+                      )}
+                      
+                      {deliveryPrice > 0 ? (
                         <div className="flex justify-between text-gray-500">
                           <span>Доставка</span>
-                          <span>{order.deliveryPrice} ₽</span>
+                          <span>{deliveryPrice} ₽</span>
                         </div>
                       ) : (
                         <div className="flex justify-between text-gray-500">
