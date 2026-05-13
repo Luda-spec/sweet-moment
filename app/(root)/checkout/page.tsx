@@ -25,11 +25,13 @@ import {
 import { useForm } from "react-hook-form";
 import { fetchAddressSuggestions, type AddressSuggestion } from "@/lib/dadata";
 import { useWheelDiscount } from "@/hooks/useWheelDiscount";
+import confetti from "canvas-confetti"; 
 
 type PaymentMethod = "CASH" | "CARD";
 type EmailForm = { email: string };
 
-const DELIVERY_PRICE = 250;
+const BASE_DELIVERY_PRICE = 250;
+const FREE_DELIVERY_THRESHOLD = 5000;
 
 const DELIVERY_TIMES = [
   { id: "11:00-13:00", label: "11:00 - 13:00" },
@@ -72,7 +74,13 @@ export default function CheckoutPage() {
 
   const productsTotal = totalPrice;
   const discountAmount = discount > 0 ? Math.round(productsTotal * (discount / 100)) : 0;
-  const finalTotal = productsTotal - discountAmount + DELIVERY_PRICE;
+  
+  const isFreeDelivery = productsTotal >= FREE_DELIVERY_THRESHOLD;
+  const currentDeliveryPrice = isFreeDelivery ? 0 : BASE_DELIVERY_PRICE;
+  const finalTotal = productsTotal - discountAmount + currentDeliveryPrice;
+
+  const progress = Math.min((productsTotal / FREE_DELIVERY_THRESHOLD) * 100, 100);
+  const remaining = Math.max(FREE_DELIVERY_THRESHOLD - productsTotal, 0);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -201,7 +209,6 @@ export default function CheckoutPage() {
     if (!isSaintPetersburg(address, selectedSuggestion || undefined)) {
       toast.error("Доставка только по Санкт-Петербургу", {
         description: "К сожалению, мы доставляем заказы только в пределах СПб и ЛО",
-        position: "top-right",
         duration: 5000,
       });
       return;
@@ -232,7 +239,7 @@ export default function CheckoutPage() {
             weight: item.weight,
           })),
           totalAmount: finalTotal,
-          deliveryPrice: DELIVERY_PRICE,
+          deliveryPrice: currentDeliveryPrice,
           discountApplied: discount > 0 ? { value: discount, amount: discountAmount } : null,
           fullName: `${firstName} ${lastName}`.trim(),
           email,
@@ -248,6 +255,14 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error(result.error);
 
       toast.success("Заказ оформлен!", { description: `Номер заказа: #${result.orderId}` });
+      
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ['#fbbf24', '#f87171', '#60a5fa', '#34d399'],
+        disableForReducedMotion: true,
+      });
       
       clearDiscount();
       clearCart();
@@ -307,7 +322,7 @@ export default function CheckoutPage() {
                   <p className="text-xs text-gray-500">По Санкт-Петербургу и ЛО</p>
                 </div>
               </div>
-              <p className="font-semibold text-gray-900">{DELIVERY_PRICE} ₽</p>
+              <p className="font-semibold text-gray-900">{currentDeliveryPrice} ₽</p>
             </div>
           </div>
         </section>
@@ -512,6 +527,24 @@ export default function CheckoutPage() {
               <span className="font-medium">{productsTotal} ₽</span>
             </div>
             
+            {remaining > 0 ? (
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-sm text-blue-800 font-medium mb-2">
+                  До бесплатной доставки осталось <span className="font-bold">{remaining} ₽</span>
+                </p>
+                <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-500 ease-out" 
+                    style={{ width: `${progress}%` }} 
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-green-50 text-green-700 rounded-xl border border-green-100 font-medium flex items-center gap-2">
+                <Truck size={16} /> Доставка бесплатно!
+              </div>
+            )}
+            
             {discount > 0 && (
               <>
                 <div className="flex justify-between items-center text-sm p-2 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
@@ -534,7 +567,9 @@ export default function CheckoutPage() {
             
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Доставка</span>
-              <span className="font-medium">{DELIVERY_PRICE} ₽</span>
+              <span className={`font-medium ${isFreeDelivery ? 'text-green-600' : ''}`}>
+                {isFreeDelivery ? 'Бесплатно' : `${currentDeliveryPrice} ₽`}
+              </span>
             </div>
             <div className="border-t pt-3 flex justify-between">
               <span className="font-semibold text-gray-900">Итого</span>

@@ -8,11 +8,12 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Prisma } from '@prisma/client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../ui';
 import { useCartStore } from '@/store/cart';
 import { toast } from 'sonner';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
@@ -30,6 +31,7 @@ export const ChooseCakeModal: React.FC<Props> = ({ product, className }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addItem } = useCartStore();
+  const { track } = useRecentlyViewed();
 
   const availableItems = product.items.filter((item) => item.weight !== null);
   const firstWeight = availableItems[0]?.weight ?? 1000;
@@ -38,6 +40,18 @@ export const ChooseCakeModal: React.FC<Props> = ({ product, className }) => {
   const [selectedFillingId, setSelectedFillingId] = useState<number>(
     product.items.flatMap((item) => item.fillings)[0]?.id
   );
+
+  useEffect(() => {
+    if (product) {
+      const previewPrice = product.items[0]?.price || 0;
+      track({
+        id: product.id,
+        name: product.name,
+        imageUrl: product.imageUrl,
+        price: previewPrice,
+      });
+    }
+  }, [product.id, track]);
 
   const handleClose = () => {
     const params = new URLSearchParams(searchParams.toString());

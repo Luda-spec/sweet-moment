@@ -1,5 +1,13 @@
-import { Container, Filters, Title, TopBar, ChooseCakeModal, ChooseProductModal } from "@/components/shared";
+import { 
+  Container, 
+  Filters, 
+  Title, 
+  TopBar, 
+  ChooseCakeModal,
+  ChooseProductModal
+} from "@/components/shared";
 import { ProductsGroupList } from "@/components/shared/products-group-list";
+import { RecentlyViewedBlock } from "@/components/shared/recently-viewed-block";
 import { WheelButton } from "@/components/shared/wheel-button";
 import { getHomePageData } from "@/hooks/get-products";
 
@@ -46,6 +54,8 @@ export default async function Home({
 
       {selectedProduct && isCake && <ChooseCakeModal product={selectedProduct} />}
       {selectedProduct && !isCake && <ChooseProductModal product={selectedProduct} />}
+
+      <RecentlyViewedBlock />
 
       <WheelButton />
     </>

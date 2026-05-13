@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Container, Title } from '@/components/shared';
 import { 
   ChevronDown, ChevronUp, Package, User, MapPin, 
-  Calendar, Clock, CreditCard, MessageSquare, Cake, Gift 
+  Calendar, Clock, CreditCard, MessageSquare, Gift 
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
+import { OrderStatus } from '@prisma/client'; 
 
 interface OrderItem {
   productId: number;
@@ -23,7 +24,7 @@ interface OrderItem {
 interface Order {
   id: number;
   createdAt: string;
-  status: 'PENDING' | 'SUCCEEDED' | 'CANCELLED'; 
+  status: OrderStatus; 
   paymentMethod: 'CASH' | 'CARD';
   totalAmount: number;
   deliveryPrice?: number | null;
@@ -37,10 +38,18 @@ interface Order {
   comment?: string;
 }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<OrderStatus, { label: string; classes: string }> = {
   PENDING: {
     label: 'В обработке',
     classes: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  },
+  ASSEMBLING: {
+    label: 'В сборке',
+    classes: 'bg-blue-100 text-blue-700 border-blue-200',
+  },
+  DELIVERING: {
+    label: 'В доставке',
+    classes: 'bg-purple-100 text-purple-700 border-purple-200',
   },
   SUCCEEDED: {
     label: 'Выполнен',
@@ -125,8 +134,7 @@ export default function OrdersPage() {
       <div className="space-y-4 max-w-3xl mx-auto">
         {orders.map((order) => {
           const isExpanded = expandedOrderId === order.id;
-          const statusKey = order.status as keyof typeof STATUS_CONFIG;
-          const status = STATUS_CONFIG[statusKey] || STATUS_CONFIG.PENDING;
+          const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
 
           const itemsTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
           const deliveryPrice = order.deliveryPrice || 0;

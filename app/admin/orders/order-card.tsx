@@ -13,7 +13,6 @@ import {
   Clock,
   CreditCard,
   MessageSquare,
-  Cake,
   Truck,
   Gift, 
 } from 'lucide-react';
@@ -48,6 +47,14 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; classes: string }> = {
   PENDING: {
     label: 'В обработке',
     classes: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  },
+  ASSEMBLING: {
+    label: 'В сборке',
+    classes: 'bg-blue-100 text-blue-700 border-blue-200',
+  },
+  DELIVERING: {
+    label: 'В доставке',
+    classes: 'bg-purple-100 text-purple-700 border-purple-200',
   },
   SUCCEEDED: {
     label: 'Выполнен',
@@ -253,6 +260,8 @@ export function OrderCard({ order }: { order: Order }) {
               disabled={isUpdating}
             >
               <option value="PENDING">В обработке</option>
+              <option value="ASSEMBLING">В сборке</option>
+              <option value="DELIVERING">В доставке</option>
               <option value="SUCCEEDED">Выполнен</option>
               <option value="CANCELLED">Отменён</option>
             </select>

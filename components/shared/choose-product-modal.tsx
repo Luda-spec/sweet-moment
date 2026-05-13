@@ -8,11 +8,12 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Prisma } from '@prisma/client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../ui';
 import { useCartStore } from '@/store/cart';
 import { toast } from 'sonner';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
@@ -33,8 +34,20 @@ export const ChooseProductModal: React.FC<Props> = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addItem } = useCartStore();
+  const { track } = useRecentlyViewed();
 
   const price = product.items[0]?.price || 0;
+
+  useEffect(() => {
+    if (product) {
+      track({
+        id: product.id,
+        name: product.name,
+        imageUrl: product.imageUrl,
+        price: price,
+      });
+    }
+  }, [product, track, price]);
 
   const handleClose = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -52,7 +65,6 @@ export const ChooseProductModal: React.FC<Props> = ({
     });
 
     toast.success('Добавлено в корзину');
-
     handleClose();
   };
 
@@ -65,7 +77,6 @@ export const ChooseProductModal: React.FC<Props> = ({
         )}
       >
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
-
         <DialogDescription className="sr-only">
           Просмотр товара {product.name}
         </DialogDescription>
@@ -98,7 +109,7 @@ export const ChooseProductModal: React.FC<Props> = ({
               onClick={handleAddToCart}
               className="w-full text-white h-12 md:h-14 rounded-xl font-medium text-sm md:text-base mt-auto shadow-lg md:shadow-none cursor-pointer"
             >
-              Добавить в корзину за {price}₽
+              Добавить в корзину за {price} ₽
             </Button>
           </div>
         </div>

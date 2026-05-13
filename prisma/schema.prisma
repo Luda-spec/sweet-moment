@@ -166,10 +166,11 @@ model WheelSpin {
 
 enum OrderStatus {
   PENDING
+  ASSEMBLING
+  DELIVERING
   SUCCEEDED
   CANCELLED
 }
-
 enum PaymentMethod {  
   CASH    
   CARD    

@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Clock,
   Gift,
+  Truck, 
 } from 'lucide-react';
 import { Button } from '../ui';
 import React, { useState } from 'react';
@@ -49,10 +50,18 @@ export const CartDrawer: React.FC = () => {
   const [lastRemovedItem, setLastRemovedItem] = useState<CartItem | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
-  // 💰 Расчёт суммы со скидкой
+  const FREE_DELIVERY_THRESHOLD = 5000;
+  const BASE_DELIVERY_PRICE = 250;
+
   const productsTotal = totalPrice;
+  
+  const isFreeDelivery = productsTotal >= FREE_DELIVERY_THRESHOLD;
+  const currentDeliveryPrice = isFreeDelivery ? 0 : BASE_DELIVERY_PRICE;
+  const progress = Math.min((productsTotal / FREE_DELIVERY_THRESHOLD) * 100, 100);
+  const remaining = Math.max(FREE_DELIVERY_THRESHOLD - productsTotal, 0);
+  
   const discountAmount = discount > 0 ? Math.round(productsTotal * (discount / 100)) : 0;
-  const finalTotal = productsTotal - discountAmount;
+  const finalTotal = productsTotal - discountAmount + currentDeliveryPrice;
 
   const handleCheckout = () => {
     if (!session) {
@@ -222,6 +231,24 @@ export const CartDrawer: React.FC = () => {
                 </div>
               )}
 
+              {remaining > 0 ? (
+                <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                  <p className="text-sm text-blue-800 font-medium mb-2">
+                    До бесплатной доставки осталось <span className="font-bold">{remaining} ₽</span>
+                  </p>
+                  <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 transition-all duration-500 ease-out" 
+                      style={{ width: `${progress}%` }} 
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-xl border border-green-100 font-medium flex items-center gap-2">
+                  <Truck size={16} /> Доставка бесплатно!
+                </div>
+              )}
+
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-gray-600">
                   <span>Товары</span>
@@ -234,6 +261,13 @@ export const CartDrawer: React.FC = () => {
                     <span>-{discountAmount} ₽</span>
                   </div>
                 )}
+                
+                <div className="flex justify-between text-gray-600">
+                  <span>Доставка</span>
+                  <span className={isFreeDelivery ? 'text-green-600 font-medium' : ''}>
+                    {isFreeDelivery ? 'Бесплатно' : `${currentDeliveryPrice} ₽`}
+                  </span>
+                </div>
                 
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Итого</span>
